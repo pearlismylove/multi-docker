@@ -213,7 +213,7 @@ COPY ./default.conf /etc/nginx/conf.d/default.conf
 
 - Create a folder named nginx and add a file named default.conf in client folder
 
-```yml
+```conf
 server {
   listen 3000;
 
@@ -245,4 +245,53 @@ COPY --from=builder /app/build /usr/share/nginx/html
 - Remove codes inside test function in client/src/App.test.js
 
 ### Github and Travis CI setup
+
+- Run below commands
+  - git init
+  - git add .
+  - git commit -m "initial commit"
+
+- Then create a github repo named "multi-docker"
+- Run below commands
+  - git remote add origin https://github.com/pearlismylove/multi-docker.git
+  - git push origin master
+
+- Go to travis-ci.com and sync account in settings page
+
+### Travis Configuration Setup
+
+- Create a .travis.yml file in the root directory
+
+```yaml
+language: generic
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t pearlismylove/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true pearlismylove/react-test npm test
+
+after_success:
+  - docker build -t pearlismylove/multi-client ./client
+  - docker build -t pearlismylove/multi-nginx ./nginx
+  - docker build -t pearlismylove/multi-server ./server
+  - docker build -t pearlismylove/multi-worker ./worker
+  # Log in to the docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push pearlismylove/multi-client
+  - docker push pearlismylove/multi-nginx
+  - docker push pearlismylove/multi-server
+  - docker push pearlismylove/multi-worker
+```
+
+### Pushing Images to Docker Hub
+
+- Go to travis-ci and open the settings in the project
+- Add below environment variables
+  - DOCKER_ID : pearlismylove
+  - DOCKER_PASSWORD: my password
 
